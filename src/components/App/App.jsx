@@ -14,6 +14,7 @@ import ContactList from 'components/ContactList';
 //   ],
 //   filter: '',
 // };
+const APP_STORAGE = 'phonebook';
 
 class App extends Component {
   defaultState = {
@@ -22,6 +23,19 @@ class App extends Component {
   };
 
   state = { ...this.defaultState };
+
+  componentDidMount() {
+    const fromLocalStorage = localStorage.getItem(APP_STORAGE);
+    const contacts = JSON.parse(fromLocalStorage);
+    if (contacts) this.setState({ contacts: [...contacts] });
+  }
+  componentDidUpdate(_, prevState) {
+    const { contacts } = this.state;
+    const prevContacts = prevState.contacts;
+    if (contacts.length !== prevContacts.lenght) {
+      localStorage.setItem(APP_STORAGE, JSON.stringify(contacts));
+    }
+  }
 
   handleOnSubitContactForm = contact => {
     if (!this.findContact(contact.name)) {
@@ -66,16 +80,17 @@ class App extends Component {
       <MainContainer>
         <h1>Phonebook</h1>
         <ContactForm onSubmit={this.handleOnSubitContactForm} />
-
         <h2>Contacts</h2>
         <Filter
           filter={this.state.filter}
           onChange={this.handleOnFilterChange}
         />
-        <ContactList
-          contacts={this.showContacts()}
-          onDelete={this.handleOnDeleteContact}
-        />
+        {this.state.contacts.length !== 0 && (
+          <ContactList
+            contacts={this.showContacts()}
+            onDelete={this.handleOnDeleteContact}
+          />
+        )}
       </MainContainer>
     );
   }
