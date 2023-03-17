@@ -4,55 +4,75 @@ import {
   FormContact,
   FormField,
   FormInput,
+  StyledErrorMessage,
 } from './ContactForm.styled';
 import PropTypes from 'prop-types';
+import { Formik } from 'formik';
+import * as Yup from 'yup';
+
+const phoneRegExp =
+  /\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}/g;
 
 class ContactForm extends Component {
   static propTypes = {
     onSubmit: PropTypes.func.isRequired,
   };
 
-  handleOnSubmit = event => {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-    const name = form.elements.name.value;
-    const number = form.elements.number.value;
-
-    if (this.props.onSubmit({ name, number })) form.reset();
-    else alert(`${name} already in contacts`);
-  };
-
-  handleOnChange = ({ currentTarget }) => {
-    const { name, value } = currentTarget;
-    console.log(name, value);
-    this.setState({ [name]: value });
-  };
   render() {
     return (
-      <FormContact onSubmit={this.handleOnSubmit}>
-        <FormField>
-          Name
-          <FormInput
-            type="text"
-            name="name"
-            pattern="^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
-            title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
-            required
-          />
-        </FormField>
-        <FormField>
-          Phone
-          <FormInput
-            type="tel"
-            name="number"
-            pattern="\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}"
-            title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
-            required
-          />
-        </FormField>
-        <FormButton type="submit">Add contact</FormButton>
-      </FormContact>
+      <Formik
+        initialValues={{ name: '', number: '' }}
+        validationSchema={Yup.object({
+          name: Yup.string()
+            .matches(
+              /^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$/,
+              'Invalid Name'
+            )
+            .required(),
+          number: Yup.string()
+            .matches(phoneRegExp, 'Invalid phone number')
+            .required(),
+        })}
+        onSubmit={({ name, number }, { resetForm }) => {
+          if (this.props.onSubmit({ name, number })) resetForm();
+          else alert(`${name} already in contacts`);
+        }}
+      >
+        {({ errors, values }) => (
+          <FormContact>
+            <FormField htmlFor="name">
+              Name
+              <FormInput
+                name="name"
+                type="text"
+                title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
+              />
+              <StyledErrorMessage name="name" component="div" />
+            </FormField>
+            <FormField htmlFor="number">
+              Phone
+              <FormInput
+                name="number"
+                type="text"
+                title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
+              />
+              <StyledErrorMessage name="number" component="div" />
+            </FormField>
+
+            <FormButton
+              type="submit"
+              disabled={
+                errors.name ||
+                errors.number ||
+                values.name === '' ||
+                values.number === ''
+              }
+            >
+              Add contact
+            </FormButton>
+          </FormContact>
+        )}
+      </Formik>
     );
   }
 }
